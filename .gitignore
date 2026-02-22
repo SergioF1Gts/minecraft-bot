@@ -1,0 +1,4 @@
+.env
+servidores.xlsx
+__pycache__/
+*.pyc
