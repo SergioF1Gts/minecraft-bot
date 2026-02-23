@@ -1,4 +1,5 @@
 .env
 servidores.xlsx
+credentials.json
 __pycache__/
 *.pyc

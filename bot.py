@@ -6,14 +6,13 @@ from telegram.ext import (
     filters, ContextTypes, ConversationHandler
 )
 from excel_manager import (
-    inicializar_excel, agregar_servidor, obtener_servidores,
+    inicializar_sheet, agregar_servidor, obtener_servidores,
     actualizar_estado, obtener_estadisticas
 )
 
 load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
-# Estados
 NOMBRE, IP, VERSION, TIPO = range(4)
 ESTADO_ID, ESTADO_NUEVO = range(4, 6)
 
@@ -28,14 +27,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/agregar — Registrar un nuevo servidor\n"
         "/ver — Ver todos los servidores\n"
         "/estado — Cambiar estado de un servidor\n"
-        "/stats — Ver estadísticas generales\n"
-        "/cancelar — Cancelar operación actual",
+        "/stats — Ver estadisticas generales\n"
+        "/cancelar — Cancelar operacion actual",
         parse_mode="Markdown"
     )
 
 async def agregar_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "🟩 *Registrar nuevo servidor*\n\n¿Cuál es el nombre del servidor?",
+        "🟩 *Registrar nuevo servidor*\n\n¿Cual es el nombre del servidor?",
         parse_mode="Markdown",
         reply_markup=ReplyKeyboardRemove()
     )
@@ -43,13 +42,13 @@ async def agregar_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def recibir_nombre(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["nombre"] = update.message.text
-    await update.message.reply_text("🌐 ¿Cuál es la IP? (ej: miservidor.aternos.me)")
+    await update.message.reply_text("🌐 ¿Cual es la IP? (ej: miservidor.aternos.me)")
     return IP
 
 async def recibir_ip(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["ip"] = update.message.text
     await update.message.reply_text(
-        "📦 ¿Qué versión de Minecraft usa?",
+        "📦 ¿Que version de Minecraft usa?",
         reply_markup=ReplyKeyboardMarkup(VERSIONES, one_time_keyboard=True, resize_keyboard=True)
     )
     return VERSION
@@ -57,7 +56,7 @@ async def recibir_ip(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def recibir_version(update: Update, context: ContextTypes.DEFAULT_TYPE):
     context.user_data["version"] = update.message.text
     await update.message.reply_text(
-        "🎮 ¿Qué tipo de servidor es?",
+        "🎮 ¿Que tipo de servidor es?",
         reply_markup=ReplyKeyboardMarkup(TIPOS, one_time_keyboard=True, resize_keyboard=True)
     )
     return TIPO
@@ -73,7 +72,7 @@ async def recibir_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🆔 ID: `{server_id}`\n"
         f"🏷️ Nombre: {nombre}\n"
         f"🌐 IP: `{ip}`\n"
-        f"📦 Versión: {version}\n"
+        f"📦 Version: {version}\n"
         f"🎮 Tipo: {tipo}\n"
         f"🔴 Estado: Offline\n\n"
         f"Usa /estado para cambiar su estado cuando lo inicies.",
@@ -85,15 +84,16 @@ async def recibir_tipo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ver_servidores(update: Update, context: ContextTypes.DEFAULT_TYPE):
     servidores = obtener_servidores()
     if not servidores:
-        await update.message.reply_text("📭 No hay servidores registrados aún.\nUsa /agregar para añadir uno.")
+        await update.message.reply_text("📭 No hay servidores registrados aun.\nUsa /agregar para añadir uno.")
         return
     texto = "🗺️ *Lista de Servidores:*\n\n"
     for s in servidores:
         sid, nombre, ip, version, tipo, estado, fecha = s
         texto += (
-            f"{estado} *{nombre}*\n"
+            f"*{nombre}*\n"
             f"   🆔 ID: `{sid}` | 📦 {version} | 🎮 {tipo}\n"
             f"   🌐 `{ip}`\n"
+            f"   Estado: {estado}\n"
             f"   📅 Registrado: {fecha}\n\n"
         )
     await update.message.reply_text(texto, parse_mode="Markdown")
@@ -103,9 +103,9 @@ async def estado_inicio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not servidores:
         await update.message.reply_text("📭 No hay servidores registrados. Usa /agregar primero.")
         return ConversationHandler.END
-    texto = "🔧 *¿Qué servidor quieres actualizar?*\n\nEscribe el ID:\n\n"
+    texto = "🔧 *¿Que servidor quieres actualizar?*\n\nEscribe el ID:\n\n"
     for s in servidores:
-        texto += f"  {s[5]} ID `{s[0]}` — {s[1]}\n"
+        texto += f"  ID `{s[0]}` — {s[1]} | {s[5]}\n"
     await update.message.reply_text(texto, parse_mode="Markdown")
     return ESTADO_ID
 
@@ -113,15 +113,15 @@ async def recibir_estado_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         context.user_data["estado_id"] = int(update.message.text)
         await update.message.reply_text(
-            "¿Cuál es el nuevo estado?",
+            "¿Cual es el nuevo estado?",
             reply_markup=ReplyKeyboardMarkup(
-                [["🟢 Online", "🔴 Offline"], ["🟡 Mantenimiento"]],
+                [["Online", "Offline"], ["Mantenimiento"]],
                 one_time_keyboard=True, resize_keyboard=True
             )
         )
         return ESTADO_NUEVO
     except ValueError:
-        await update.message.reply_text("❌ Eso no es un ID válido. Escribe solo el número.")
+        await update.message.reply_text("❌ Eso no es un ID valido. Escribe solo el numero.")
         return ESTADO_ID
 
 async def recibir_estado_nuevo(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -130,13 +130,13 @@ async def recibir_estado_nuevo(update: Update, context: ContextTypes.DEFAULT_TYP
     exito = actualizar_estado(server_id, nuevo_estado)
     if exito:
         await update.message.reply_text(
-            f" Servidor ID `{server_id}` actualizado a {nuevo_estado}",
+            f"✅ Servidor ID `{server_id}` actualizado a {nuevo_estado}",
             parse_mode="Markdown",
             reply_markup=ReplyKeyboardRemove()
         )
     else:
         await update.message.reply_text(
-            f" No se encontró un servidor con ID `{server_id}`.",
+            f"❌ No se encontro un servidor con ID `{server_id}`.",
             parse_mode="Markdown",
             reply_markup=ReplyKeyboardRemove()
         )
@@ -145,25 +145,25 @@ async def recibir_estado_nuevo(update: Update, context: ContextTypes.DEFAULT_TYP
 async def ver_stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     total, online, offline, versiones = obtener_estadisticas()
     if total == 0:
-        await update.message.reply_text("📭 No hay servidores registrados aún.")
+        await update.message.reply_text("📭 No hay servidores registrados aun.")
         return
     texto = (
-        " *Estadísticas Generales*\n\n"
-        f" Total de servidores: *{total}*\n"
-        f" Online: *{online}*\n"
-        f" Offline: *{offline}*\n\n"
-        " *Por versión:*\n"
+        "📊 *Estadisticas Generales*\n\n"
+        f"🖥️ Total de servidores: *{total}*\n"
+        f"🟢 Online: *{online}*\n"
+        f"🔴 Offline: *{offline}*\n\n"
+        "📦 *Por version:*\n"
     )
     for version, cantidad in versiones.items():
         texto += f"  • {version}: {cantidad} servidor(es)\n"
     await update.message.reply_text(texto, parse_mode="Markdown")
 
 async def cancelar(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("❌ Operación cancelada.", reply_markup=ReplyKeyboardRemove())
+    await update.message.reply_text("❌ Operacion cancelada.", reply_markup=ReplyKeyboardRemove())
     return ConversationHandler.END
 
 if __name__ == "__main__":
-    inicializar_excel()
+    inicializar_sheet()
     app = ApplicationBuilder().token(TOKEN).build()
 
     conv_agregar = ConversationHandler(
@@ -192,5 +192,5 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("ver", ver_servidores))
     app.add_handler(CommandHandler("stats", ver_stats))
 
-    print("⛏️ Bot de Minecraft corriendo...")
+    print("⛏️ Bot de Minecraft corriendo con Google Sheets...")
     app.run_polling()

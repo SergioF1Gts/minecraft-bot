@@ -1,44 +1,50 @@
-import openpyxl
+import gspread
+from google.oauth2.service_account import Credentials
 from datetime import datetime
 import os
+from dotenv import load_dotenv
 
-ARCHIVO = "servidores.xlsx"
+load_dotenv()
 
-def inicializar_excel():
-    if not os.path.exists(ARCHIVO):
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Servidores"
-        ws.append(["ID", "Nombre", "IP", "Versión", "Tipo", "Estado", "Fecha Registro"])
-        wb.save(ARCHIVO)
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive"
+]
 
-def obtener_nuevo_id():
-    wb = openpyxl.load_workbook(ARCHIVO)
-    ws = wb.active
-    filas = list(ws.iter_rows(values_only=True))[1:]
-    return len(filas) + 1
+def conectar():
+    creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+    cliente = gspread.authorize(creds)
+    sheet = cliente.open_by_key(os.getenv("SHEET_ID")).sheet1
+    return sheet
+
+def inicializar_sheet():
+    sheet = conectar()
+    if sheet.row_count == 0 or sheet.cell(1, 1).value != "ID":
+        sheet.clear()
+        sheet.append_row(["ID", "Nombre", "IP", "Version", "Tipo", "Estado", "Fecha Registro"])
+
+def obtener_nuevo_id(sheet):
+    filas = sheet.get_all_values()
+    return len(filas)  # encabezado cuenta como fila 1, entonces len = siguiente ID
 
 def agregar_servidor(nombre, ip, version, tipo):
-    wb = openpyxl.load_workbook(ARCHIVO)
-    ws = wb.active
-    nuevo_id = obtener_nuevo_id()
+    sheet = conectar()
+    nuevo_id = obtener_nuevo_id(sheet)
     fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
-    ws.append([nuevo_id, nombre, ip, version, tipo, "🔴 Offline", fecha])
-    wb.save(ARCHIVO)
+    sheet.append_row([nuevo_id, nombre, ip, version, tipo, "Offline", fecha])
     return nuevo_id
 
 def obtener_servidores():
-    wb = openpyxl.load_workbook(ARCHIVO)
-    ws = wb.active
-    return list(ws.iter_rows(values_only=True))[1:]
+    sheet = conectar()
+    filas = sheet.get_all_values()
+    return filas[1:]  # saltar encabezado
 
 def actualizar_estado(server_id, nuevo_estado):
-    wb = openpyxl.load_workbook(ARCHIVO)
-    ws = wb.active
-    for fila in ws.iter_rows(min_row=2):
-        if fila[0].value == server_id:
-            fila[5].value = nuevo_estado
-            wb.save(ARCHIVO)
+    sheet = conectar()
+    filas = sheet.get_all_values()
+    for i, fila in enumerate(filas[1:], start=2):
+        if str(fila[0]) == str(server_id):
+            sheet.update_cell(i, 6, nuevo_estado)
             return True
     return False
 
