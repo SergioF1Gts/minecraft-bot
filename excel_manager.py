@@ -2,6 +2,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 from datetime import datetime
 import os
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,7 +13,12 @@ SCOPES = [
 ]
 
 def conectar():
-    creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
+    creds_json = os.getenv("GOOGLE_CREDENTIALS")
+    if creds_json:
+        creds_info = json.loads(creds_json)
+        creds = Credentials.from_service_account_info(creds_info, scopes=SCOPES)
+    else:
+        creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPES)
     cliente = gspread.authorize(creds)
     sheet = cliente.open_by_key(os.getenv("SHEET_ID")).sheet1
     return sheet
@@ -25,7 +31,7 @@ def inicializar_sheet():
 
 def obtener_nuevo_id(sheet):
     filas = sheet.get_all_values()
-    return len(filas)  # encabezado cuenta como fila 1, entonces len = siguiente ID
+    return len(filas)
 
 def agregar_servidor(nombre, ip, version, tipo):
     sheet = conectar()
@@ -37,7 +43,7 @@ def agregar_servidor(nombre, ip, version, tipo):
 def obtener_servidores():
     sheet = conectar()
     filas = sheet.get_all_values()
-    return filas[1:]  # saltar encabezado
+    return filas[1:]
 
 def actualizar_estado(server_id, nuevo_estado):
     sheet = conectar()
