@@ -192,5 +192,5 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("ver", ver_servidores))
     app.add_handler(CommandHandler("stats", ver_stats))
 
-    print("⛏️ Bot de Minecraft corriendo con Google Sheets...")
+    print("Bot de Minecraft corriendo con Google Sheets...")
     app.run_polling()
